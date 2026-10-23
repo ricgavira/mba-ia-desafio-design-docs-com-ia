@@ -191,6 +191,7 @@ Mapeia cada item registrado em `docs/PRD.md`, `docs/RFC.md`, `docs/FDD.md` e nos
 | FDD-INT-14 | `docs/FDD.md` | Integração | paginated() nas listagens | CODIGO | `src/shared/http/response.ts` |
 | FDD-INT-15 | `docs/FDD.md` | Integração | Novos modelos e migration no Prisma | CODIGO | `prisma/schema.prisma` |
 | FDD-INT-16 | `docs/FDD.md` | Integração | Setup e factories de teste ganham tabelas webhook_* | CODIGO | `tests/setup.ts` |
+| FDD-INT-17 | `docs/FDD.md` | Integração | FK webhooks.customerId com ON DELETE CASCADE para não quebrar delete de customer | CODIGO | `src/modules/customers/customer.repository.ts` |
 | FDD-ACE-01 | `docs/FDD.md` | Critério de aceite | 1 linha de outbox por webhook elegível; erro no insert reverte o status | TRANSCRICAO | [09:40] Bruno |
 | FDD-ACE-02 | `docs/FDD.md` | Critério de aceite | Sem webhook interessado, nada é inserido | TRANSCRICAO | [09:34] Bruno |
 | FDD-ACE-03 | `docs/FDD.md` | Critério de aceite | Envio em ≤ 2s + chamada; total < 10s | TRANSCRICAO | [09:10] Larissa |

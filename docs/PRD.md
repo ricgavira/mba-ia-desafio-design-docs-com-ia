@@ -94,7 +94,7 @@ A aplicação atual é uma API Node.js + TypeScript com módulos de autenticaç�
 | PRD-FR-09 | O cliente pode **rotacionar a secret** pela API; a anterior permanece válida por **24 horas**. | [09:21] Sofia |
 | PRD-FR-10 | Cada envio é **assinado** (HMAC-SHA256) com a secret do endpoint e traz identificador do evento, do webhook e momento do envio. | [09:20] Sofia; [09:44] Diego, Sofia |
 | PRD-FR-11 | Cada evento tem **identificador único** estável entre reenvios, para que o cliente deduplique. | [09:25] Diego |
-| PRD-FR-12 | Entregas com falha são **retentadas automaticamente** (5 retentativas, com intervalos crescentes de 1 min a 12 h) e, esgotadas, vão para uma **fila de falhas**. | [09:17] Larissa |
+| PRD-FR-12 | Entregas com falha são **retentadas automaticamente** (até 5 reenvios, com intervalos crescentes de 1 min a 12 h; contagem exata em aberto, ver RFC-Q-05) e, esgotadas, vão para uma **fila de falhas**. | [09:17] Larissa |
 | PRD-FR-13 | Um **ADMIN** pode **reenviar** manualmente um evento da fila de falhas; o autor do reenvio é registrado. | [09:18] Diego; [09:36] Sofia |
 | PRD-FR-14 | Somente URLs **`https`** são aceitas no cadastro. | [09:23] Sofia |
 | PRD-FR-15 | O cadastro e a manutenção dos webhooks são permitidos a **qualquer role autenticada**; o reenvio exige `ADMIN`. | [09:36] Larissa; [09:37] Sofia |
@@ -122,7 +122,7 @@ Detalhes e alternativas estão nos ADRs.
 | --- | --- | --- | --- |
 | PRD-DEC-01 | Registrar o evento por **outbox no MySQL**, na mesma transação do pedido. | Um `INSERT` a mais na transação, em troca de consistência e zero infraestrutura nova. | [ADR-001](adrs/ADR-001-outbox-no-mysql.md) |
 | PRD-DEC-02 | **Worker separado** com polling de 2 s. | Latência mínima de até 2 s e um processo extra para operar. | [ADR-002](adrs/ADR-002-worker-separado-em-polling.md) |
-| PRD-DEC-03 | **Retry com backoff** (5 tentativas) e **fila de falhas** com reenvio manual. | Cliente fora do ar por mais de ~15 h exige intervenção. | [ADR-003](adrs/ADR-003-retry-backoff-e-dlq.md) |
+| PRD-DEC-03 | **Retry com backoff** (1m/5m/30m/2h/12h) e **fila de falhas** com reenvio manual. | Cliente fora do ar por mais de ~15 h exige intervenção. | [ADR-003](adrs/ADR-003-retry-backoff-e-dlq.md) |
 | PRD-DEC-04 | **HMAC-SHA256** com secret por endpoint e rotação de 24 h. | Complexidade de manter duas secrets; revisão de segurança antes do deploy. | [ADR-004](adrs/ADR-004-hmac-sha256-secret-por-endpoint.md) |
 | PRD-DEC-05 | **At-least-once** com identificador de evento. | Responsabilidade de deduplicar passa ao cliente. | [ADR-005](adrs/ADR-005-at-least-once-com-x-event-id.md) |
 | PRD-DEC-06 | **Reuso dos padrões** do projeto. | Herda as limitações dos padrões atuais. | [ADR-006](adrs/ADR-006-reuso-dos-padroes-do-projeto.md) |

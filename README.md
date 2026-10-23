@@ -26,7 +26,7 @@ A ordem seguiu a sugerida no enunciado, de baixo para cima na "altura" dos docum
 2. **Filtragem da transcrição**, com prompt dirigido, em sete grupos: decisões fechadas, requisitos funcionais, restrições, ganchos com o código, descartado, adiado e detalhes secundários. Cada item recebeu `[hh:mm] Falante`.
 3. **ADRs primeiro (7).** Outbox, worker em polling, retry+DLQ, HMAC, at-least-once, reuso de padrões e contrato de entrega. As seis decisões principais do enunciado estão cobertas; o sétimo ADR reúne decisões secundárias (payload, headers, timeout, limite de 64 KB).
 4. **RFC** (~1.300 palavras): consolida a proposta, as 6 alternativas descartadas, 8 questões em aberto e linka os 7 ADRs.
-5. **FDD**: fluxos, modelo de dados, 8 contratos, matriz de erros `WEBHOOK_*`, resiliência, observabilidade e a seção obrigatória de integração (16 arquivos reais do código).
+5. **FDD**: fluxos, modelo de dados, 8 contratos, matriz de erros `WEBHOOK_*`, resiliência, observabilidade e a seção obrigatória de integração (17 arquivos reais do código).
 6. **PRD por último**, já como consolidação de RFC, FDD e ADRs.
 7. **Tracker** gerado por script a partir de uma tabela de itens, depois validado contra a transcrição e o repositório.
 8. **README** (este arquivo), por último.
@@ -70,7 +70,7 @@ O segundo prompt foi implementado como o script `validate.py` (determinístico, 
 
 ## Iterações e ajustes
 
-O pacote passou por **dois ciclos principais**: geração em cascata (ADRs → RFC → FDD → PRD → Tracker) e um ciclo de revisão crítica com ajustes. Os principais momentos em que o primeiro rascunho precisou ser corrigido ou questionado:
+O pacote passou por **três ciclos principais**: geração em cascata (ADRs → RFC → FDD → PRD → Tracker), revisão com ajustes e uma revisão crítica final. Os principais momentos em que o primeiro rascunho precisou ser corrigido ou questionado:
 
 1. **Leitura do PDF do desafio falhou** (a ferramenta de renderização de páginas não estava instalada). O contorno foi extrair o texto com Python e conferi-lo com o enunciado presente no `README.md` original. Nenhum requisito foi inferido sem o texto.
 2. **"5 tentativas" é ambíguo.** A lista tem 5 intervalos (1m/5m/30m/2h/12h) e Diego fala em "quase 15 horas entre primeira falha e última tentativa", o que só fecha com 1 envio inicial + 5 retentativas. Em vez de escolher em silêncio, a interpretação ficou declarada no ADR-003 e no FDD e foi aberta como questão **RFC-Q-05** para a revisão.
@@ -80,7 +80,15 @@ O pacote passou por **dois ciclos principais**: geração em cascata (ADRs → R
 6. **Lacunas não discutidas na reunião, expostas em vez de preenchidas:** proteção em repouso da secret (precisa ser recuperável para assinar), formato de `X-Signature` durante a rotação, posse do `customerId` no cadastro e risco de SSRF na URL. Foram levados à revisão de segurança de Sofia (RFC-Q-07, FDD-RISK-06/07).
 7. **Meta quantitativa do PRD corrigida.** O rascunho dizia "3 de 3 clientes até o fim de novembro", mas só a Atlas citou novembro ([09:45] Marcos). O texto agora distingue as duas coisas.
 8. **Observabilidade sem origem.** A reunião não tratou de métricas nem tracing. Em vez de inventar stack, o FDD propõe métricas por log/SQL e *tracing por correlação* via `event_id`, marcado como decisão de design.
-9. **Validação do pacote:** a auditoria automática encerrou com 0 inconsistências em 224 linhas de Tracker (87% `TRANSCRICAO`, 30 linhas `CODIGO`; todos os timestamps, falantes e caminhos conferidos).
+9. **Validação do pacote:** a auditoria automática encerrou com 0 inconsistências (timestamps, falantes e caminhos conferidos).
+
+**Terceiro ciclo: revisão crítica pela própria IA, depois de tudo publicado.** A IA releu os documentos como um revisor externo, cruzando com o código, e achou três problemas que a validação automática não pega, por serem de coerência e não de existência de origem:
+
+10. **Exclusão de customer.** O FDD criava a FK `webhooks.customerId` sem tratar que `CustomerRepository.delete` faz `prisma.customer.delete` direto; excluir um customer com webhooks cairia em erro do Prisma sem tratamento (500). Foi definido `ON DELETE CASCADE` e criado o item FDD-INT-17.
+11. **Inconsistência sobre "5 tentativas".** Apesar de a contagem estar aberta (RFC-Q-05), o PRD e o resumo do RFC ainda a afirmavam como fato. Os dois passaram a remeter à questão em aberto.
+12. **Assinatura × retry.** O FDD não dizia que o corpo deve ser serializado uma única vez e que os mesmos bytes são assinados e enviados, nem diferenciava `timestamp` do payload (momento do evento) de `X-Timestamp` (momento de cada envio). Ambos foram especificados.
+
+Estado final: **3 ciclos** (geração, revisão com ajustes e revisão crítica), 225 linhas no Tracker (86% `TRANSCRICAO`, 31 `CODIGO`), 0 inconsistências na auditoria. Até aqui as iterações foram conduzidas pela IA; feedback humano sobre o conteúdo ainda não foi incorporado.
 
 ## Como navegar a entrega
 

@@ -57,6 +57,7 @@ Observações:
 
 - **Uma linha de outbox por (evento, webhook)**: cada endpoint tem seu `eventId`, necessário para `X-Webhook-Id` e para retry independente por endpoint ([09:44] Sofia). *(decisão de design)*
 - Os estados da outbox espelham "pendente, processando, falhou, entregue" ([09:08] Diego). `FAILED` significa **falha permanente já copiada para a DLQ**; retentativas ficam em `PENDING` com `nextAttemptAt` no futuro. *(decisão de design)*
+- `webhooks.customerId` referencia `customers` com `ON DELETE CASCADE`: hoje `CustomerRepository.delete` faz `prisma.customer.delete` direto, e uma FK sem cascade faria a exclusão de um customer com webhooks cair em erro do Prisma sem tratamento (500). *(decisão de design)*
 - `ON DELETE CASCADE` de `webhooks` para as demais tabelas: remover o webhook remove fila, histórico e DLQ dele. *(decisão de design; ver risco FDD-RISK-05)*
 - O `secret` fica recuperável (precisa assinar); a proteção em repouso aguarda a revisão de Sofia ([09:46] Sofia).
 
@@ -96,6 +97,8 @@ export async function publishWebhookEvent(
   }
 }
 ```
+
+O `timestamp` do payload é o instante em que o evento entrou na outbox (momento da mudança de status); já o header `X-Timestamp` é o instante de cada envio, que muda a cada retentativa. O corpo é serializado **uma única vez** (`JSON.stringify` sobre o snapshot) e os mesmos bytes são assinados e enviados, para a assinatura conferir no cliente. *(decisão de design)*
 
 Payload (campos de [09:43] Diego; sem `items`):
 
@@ -381,6 +384,7 @@ Para impedir vazamento acidental, `redactPaths` em `src/shared/logger/index.ts` 
 | FDD-INT-14 | `src/shared/http/response.ts` | `paginated()` nas listagens de webhooks e deliveries. |
 | FDD-INT-15 | `prisma/schema.prisma` e `prisma/migrations/` | Novos modelos (seção 4), relação inversa em `Customer`, e nova migration. |
 | FDD-INT-16 | `tests/setup.ts` e `tests/helpers/factories.ts` | O `beforeEach` precisa limpar as tabelas `webhook_*` antes de `customers`; criar `createTestWebhook()` nas factories. |
+| FDD-INT-17 | `src/modules/customers/customer.repository.ts` | O `delete` atual remove o customer direto; a FK `webhooks.customerId` com `ON DELETE CASCADE` (seção 4) evita quebrar essa exclusão. Nenhuma alteração de código no módulo de customers. |
 
 ## 11. Dependências e compatibilidade
 

@@ -13,7 +13,7 @@ Os identificadores `RFC-*` ligam cada item ao [Tracker](TRACKER.md).
 
 ## 1. Resumo executivo (TL;DR)
 
-Propomos notificar clientes B2B por **webhooks de saída** a cada mudança de status de pedido. O evento é gravado na tabela `webhook_outbox` **dentro da mesma transação SQL** de `OrderService.changeStatus`; um **worker em processo separado**, em **polling de 2 s**, entrega o evento por HTTPS assinado com **HMAC-SHA256 (secret por endpoint)**. Falhas seguem **5 retentativas com backoff 1m/5m/30m/2h/12h** e vão para uma **DLQ em tabela própria**, com replay manual por ADMIN. A garantia é **at-least-once**, com deduplicação do lado do cliente via `X-Event-Id`. Tudo reaproveita os padrões do código atual, sem infraestrutura nova. Prazo estimado: **3 sprints**, incluindo a revisão de segurança ([09:46] Larissa).
+Propomos notificar clientes B2B por **webhooks de saída** a cada mudança de status de pedido. O evento é gravado na tabela `webhook_outbox` **dentro da mesma transação SQL** de `OrderService.changeStatus`; um **worker em processo separado**, em **polling de 2 s**, entrega o evento por HTTPS assinado com **HMAC-SHA256 (secret por endpoint)**. Falhas seguem **backoff 1m/5m/30m/2h/12h** (5 intervalos; contagem exata em [RFC-Q-05](#5-questões-em-aberto)) e vão para uma **DLQ em tabela própria**, com replay manual por ADMIN. A garantia é **at-least-once**, com deduplicação do lado do cliente via `X-Event-Id`. Tudo reaproveita os padrões do código atual, sem infraestrutura nova. Prazo estimado: **3 sprints**, incluindo a revisão de segurança ([09:46] Larissa).
 
 ## 2. Contexto e problema
 
